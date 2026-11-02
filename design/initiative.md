@@ -1,0 +1,3 @@
+* On veut un programme écrit en rust pour linux/wsl qui sera une amélioration de z.sh - c'est à dire pouvoir accéder à un dossier n'importe où depuis le terminal en tapant juste le nom du dossier ou un bout du nom du dossier
+* l'idée : on tape le début d'un dossier et on appuie soit sur Tab pour avoir une "light TUI" qui affiche les 10 meilleurs choix, sinon Entrée et ça emmene au meilleur choix
+* le choix se fait sur une formule "last accessed at" et "frequency of access"
