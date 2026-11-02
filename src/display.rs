@@ -13,7 +13,9 @@ pub struct Display;
 impl Display {
     /// Shows the menu below the prompt and returns the chosen index.
     /// Drawn on /dev/tty because stdout is captured by the shell.
+    /// The list is cut to fit the terminal height (one line is kept for the prompt).
     pub fn select(paths: &[&Path]) -> io::Result<Option<usize>> {
+        let paths = &paths[..paths.len().min(max_lines(terminal::size().ok()))];
         let mut tty = OpenOptions::new().write(true).open("/dev/tty")?;
         terminal::enable_raw_mode()?;
         let result = run_menu(&mut tty, paths);
@@ -104,6 +106,14 @@ impl Menu {
     }
 }
 
+/// Menu lines that fit below the prompt; unknown size (or 0 rows) means no limit.
+fn max_lines(size: Option<(u16, u16)>) -> usize {
+    match size {
+        Some((_, rows)) if rows > 0 => (rows as usize - 1).max(1),
+        _ => usize::MAX,
+    }
+}
+
 /// '1'..'9' -> 0..8, '0' -> 9 (the 10th line).
 fn digit_index(c: char) -> Option<usize> {
     match c.to_digit(10)? {
@@ -170,6 +180,14 @@ mod tests {
         let mut menu = Menu::new(2);
         assert_eq!(menu.handle(key(KeyCode::Char('x'))), Action::Continue);
         assert_eq!(menu.selected, 0);
+    }
+
+    #[test]
+    fn menu_fits_terminal_height() {
+        assert_eq!(max_lines(Some((80, 24))), 23);
+        assert_eq!(max_lines(Some((80, 1))), 1);
+        assert_eq!(max_lines(Some((80, 0))), usize::MAX);
+        assert_eq!(max_lines(None), usize::MAX);
     }
 
     #[test]

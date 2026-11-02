@@ -1,16 +1,16 @@
-use crate::dir::Dir;
+use crate::dir::{Dir, Weights};
 
 pub struct DirSelector;
 
 impl DirSelector {
     /// Matching dirs, best frecency first.
-    pub fn find_best<'a>(dirs: &'a [Dir], query: &[String], now: u64) -> Vec<&'a Dir> {
+    pub fn find_best<'a>(dirs: &'a [Dir], query: &[String], now: u64, weights: &Weights) -> Vec<&'a Dir> {
         let words: Vec<String> = query.iter().map(|w| w.to_lowercase()).collect();
         let mut found: Vec<&Dir> = dirs
             .iter()
             .filter(|d| matches(&d.path.to_string_lossy().to_lowercase(), &words))
             .collect();
-        found.sort_by(|a, b| b.frecency(now).total_cmp(&a.frecency(now)));
+        found.sort_by(|a, b| b.frecency(now, weights).total_cmp(&a.frecency(now, weights)));
         found
     }
 }
@@ -50,7 +50,7 @@ mod tests {
     #[test]
     fn matches_substring_case_insensitively() {
         let dirs = vec![dir("/home/hane/Projets", 1.0), dir("/tmp", 1.0)];
-        assert_eq!(paths(DirSelector::find_best(&dirs, &query(&["proj"]), 0)), ["/home/hane/Projets"]);
+        assert_eq!(paths(DirSelector::find_best(&dirs, &query(&["proj"]), 0, &Weights::default())), ["/home/hane/Projets"]);
     }
 
     #[test]
@@ -62,7 +62,7 @@ mod tests {
             Dir { path: "/a/proj3".into(), count: 1.0, last_access: 0 },
         ];
         assert_eq!(
-            paths(DirSelector::find_best(&dirs, &query(&["proj"]), now)),
+            paths(DirSelector::find_best(&dirs, &query(&["proj"]), now, &Weights::default())),
             ["/a/proj2", "/a/proj1", "/a/proj3"]
         );
     }
@@ -70,18 +70,18 @@ mod tests {
     #[test]
     fn words_must_match_in_order() {
         let dirs = vec![dir("/work/api/src", 1.0), dir("/src/api/work", 1.0)];
-        assert_eq!(paths(DirSelector::find_best(&dirs, &query(&["work", "src"]), 0)), ["/work/api/src"]);
+        assert_eq!(paths(DirSelector::find_best(&dirs, &query(&["work", "src"]), 0, &Weights::default())), ["/work/api/src"]);
     }
 
     #[test]
     fn last_word_must_match_last_segment() {
         let dirs = vec![dir("/home/proj/docs", 5.0), dir("/home/proj", 1.0)];
-        assert_eq!(paths(DirSelector::find_best(&dirs, &query(&["proj"]), 0)), ["/home/proj"]);
+        assert_eq!(paths(DirSelector::find_best(&dirs, &query(&["proj"]), 0, &Weights::default())), ["/home/proj"]);
     }
 
     #[test]
     fn empty_query_matches_everything() {
         let dirs = vec![dir("/a", 1.0), dir("/b", 2.0)];
-        assert_eq!(paths(DirSelector::find_best(&dirs, &[], 0)), ["/b", "/a"]);
+        assert_eq!(paths(DirSelector::find_best(&dirs, &[], 0, &Weights::default())), ["/b", "/a"]);
     }
 }

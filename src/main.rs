@@ -1,3 +1,4 @@
+mod config;
 mod dir;
 mod display;
 mod selector;
@@ -8,11 +9,10 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use config::Config;
 use display::Display;
 use selector::DirSelector;
 use store::DirStore;
-
-const TUI_CHOICES: usize = 10;
 
 const USAGE: &str = "usage: zust add <path> | query <words...> | tui <words...> | init bash";
 
@@ -69,11 +69,11 @@ fn add(args: &[String]) -> std::io::Result<bool> {
 }
 
 /// Best existing matches; dirs that vanished are dropped from the store.
-fn best_existing(query: &[String], n: usize) -> std::io::Result<Vec<PathBuf>> {
+fn best_existing(query: &[String], n: usize, config: &Config) -> std::io::Result<Vec<PathBuf>> {
     let mut store = DirStore::load(data_file())?;
     let mut found = Vec::new();
     let mut gone = Vec::new();
-    for dir in DirSelector::find_best(&store.dirs, query, now()) {
+    for dir in DirSelector::find_best(&store.dirs, query, now(), &config.weights) {
         if found.len() == n {
             break;
         }
@@ -93,7 +93,7 @@ fn best_existing(query: &[String], n: usize) -> std::io::Result<Vec<PathBuf>> {
 }
 
 fn query(words: &[String]) -> std::io::Result<bool> {
-    match best_existing(words, 1)?.first() {
+    match best_existing(words, 1, &Config::from_env())?.first() {
         Some(path) => {
             Display::print(path);
             Ok(true)
@@ -103,7 +103,8 @@ fn query(words: &[String]) -> std::io::Result<bool> {
 }
 
 fn tui(words: &[String]) -> std::io::Result<bool> {
-    let found = best_existing(words, TUI_CHOICES)?;
+    let config = Config::from_env();
+    let found = best_existing(words, config.tui_choices, &config)?;
     let choice = match found.len() {
         0 => None,
         1 => Some(0),
