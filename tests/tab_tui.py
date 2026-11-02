@@ -1,7 +1,7 @@
 """Pilote un bash interactif dans un pty : `z proj` + Tab, choix 2 dans la TUI,
 puis vérifie que le shell est arrivé dans le dossier sans Entrée supplémentaire.
 Usage : python3 -I tests/tab_tui.py <dossier contenant le binaire zust>"""
-import os, pty, select, sys, tempfile, time
+import os, pty, re, select, sys, tempfile, time
 
 bin_dir = os.path.abspath(sys.argv[1])
 tmp = tempfile.mkdtemp()
@@ -42,7 +42,9 @@ out = pump(0.5).decode(errors="replace")
 os.write(fd, b"exit\r"); pump(0.2, answers=False)
 
 expected = f"RESULT={tmp}/proj-b"
-if expected in out.replace("\r", "").splitlines():
+# Retire les séquences d'échappement (ex. bracketed paste `ESC[?2004l` émis par bash >= 5.1)
+clean = re.sub(r"\x1b\[[0-9;?]*[A-Za-z]", "", out).replace("\r", "")
+if expected in clean.splitlines():
     print("OK", expected)
 else:
     print("FAIL, attendu", expected, "\n--- sortie:\n", out[-600:])
