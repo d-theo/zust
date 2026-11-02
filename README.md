@@ -7,8 +7,8 @@ its name, or part of its name. It is a Rust rewrite of
 ```console
 $ z proj        # Enter: cd to the best directory containing "proj"
 $ z proj<Tab>   # Tab: show the 10 best matches and pick one
-    1  /home/hane/projets
-    2  /home/hane/work/proj-api
+    1  /home/dtheo/projets
+    2  /home/dtheo/work/proj-api
     3  /tmp/proj-test
 ```
 
@@ -158,7 +158,7 @@ The database is a plain text file, `~/.zust` by default, one line per directory:
 
 ```
 path;count;last_access
-/home/hane;12;1778353961
+/home/dtheo;12;1778353961
 ```
 
 - `count`: number of visits (may become fractional after aging);
